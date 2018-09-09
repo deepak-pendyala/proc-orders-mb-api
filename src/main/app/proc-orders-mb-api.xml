@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd">
+
+   
+    <flow name="proc-orders-mb-api-main">
+        <http:listener config-ref="http-shared" path="/${api.name}/${api.version}/*" doc:name="HTTP"/>
+        <json-logger:logger config-ref="JSON_Logger__Logger_Configuration" doc:name="JSON Logger">
+            <json-logger:logger-json message="Process api request received for orderId: #[message.inboundProperties.'http.uri.params'.orderId]"/>
+        </json-logger:logger>
+
+        <apikit:router xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" config-ref="proc-orders-mb-api-config" doc:name="APIkit Router"/>
+        <exception-strategy ref="global-exception-handlerChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="get:/orders/{orderId}:proc-orders-mb-api-config">
+        <http:request config-ref="HTTP_Request_Configuration" path="/sys-orders-mb-api/v1/orders/{orderId}" method="GET" doc:name="HTTP-Call sys order">
+            <http:request-builder>
+                <http:uri-param paramName="orderId" value="#[message.inboundProperties.'http.uri.params'.orderId]"/>
+                <http:header headerName="sys_orders_client_id" value="${sys_orders_client_id}"/>
+                <http:header headerName="sys_orders_client_secret" value="${sys_orders_client_secret}"/>
+                <http:header headerName="correlationId" value="#[message.inboundProperties.messageId]"/>
+            </http:request-builder>
+        </http:request>
+        <json-logger:logger config-ref="JSON_Logger__Logger_Configuration" doc:name="JSON Logger">
+            <json-logger:logger-json tracePoint="AFTER_API_OR_BACKEND" message="sys order api call succesful"/>
+        </json-logger:logger>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <dw:transform-message doc:name="Transform to Order canonical structure">
+            <dw:set-payload resource="classpath:dwl\order-canonical.dwl"/>
+        </dw:transform-message>
+        <json-logger:logger config-ref="JSON_Logger__Logger_Configuration" doc:name="JSON Logger">
+            <json-logger:logger-json tracePoint="AFTER_TRANSFORM" message="Transform to Order canonical structure succesful. For payload, check exp api logs"/>
+        </json-logger:logger>
+
+    </flow>
+    <flow name="proc-orders-mb-apiFlow">
+        <http:request config-ref="HTTP_Request_Configuration" path="/sys-orders-mb-api/v1/orders/{orderId}/orderItems" method="GET" doc:name="HTTP-Call sys orderItem">
+            <http:request-builder>
+                <http:uri-param paramName="orderId" value="#[flowVars.orderId]"/>
+                <http:header headerName="sys_orders_client_id" value="${sys_orders_client_id}"/>
+                <http:header headerName="sys_orders_client_secret" value="${sys_orders_client_secret}"/>
+                <http:header headerName="correlationId" value="#[message.inboundProperties.messageId]"/>
+            </http:request-builder>
+        </http:request>
+        <json-logger:logger config-ref="JSON_Logger__Logger_Configuration" doc:name="JSON Logger">
+            <json-logger:logger-json tracePoint="AFTER_API_OR_BACKEND" message="sys orderItem api call succesful"/>
+        </json-logger:logger>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <dw:transform-message doc:name="Transform to Orderitems canonical structure">
+            <dw:set-payload resource="classpath:dwl\orderItem-with-item.dwl"/>
+        </dw:transform-message>
+        <json-logger:logger config-ref="JSON_Logger__Logger_Configuration" doc:name="JSON Logger">
+            <json-logger:logger-json tracePoint="AFTER_API_OR_BACKEND" message="Transform to OrderItem canonical structure succesful. Payload: #[message.payloadAs(String)]"/>
+        </json-logger:logger>
+    </flow>
+    <flow name="items-apiFlow">
+        <http:request config-ref="HTTP_Request_Configuration" path="/sys-orders-mb-api/v1/items/{itemId}" method="GET" doc:name="HTTP-Call sys item">
+            <http:request-builder>
+                <http:uri-param paramName="itemId" value="#[payload]"/>
+                <http:header headerName="sys_orders_client_id" value="${sys_orders_client_id}"/>
+                <http:header headerName="sys_orders_client_secret" value="${sys_orders_client_secret}"/>
+                <http:header headerName="correlationId" value="#[message.inboundProperties.messageId]"/>
+            </http:request-builder>
+        </http:request>
+        <json-logger:logger config-ref="JSON_Logger__Logger_Configuration" doc:name="JSON Logger">
+            <json-logger:logger-json tracePoint="AFTER_API_OR_BACKEND" message="Sys item API call succesful. For payload, check sys api logs"/>
+        </json-logger:logger>
+    </flow>
+
+</mule>

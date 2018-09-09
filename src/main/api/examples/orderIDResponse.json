@@ -1,0 +1,27 @@
+{
+  "orderID": 15346,
+  "placementDate": "modus box",
+  "customerName": "2018-09-07",
+  "orderItems": {
+    "orderItems": [
+      {
+        "orderItemId": "MB-ITM156",
+        "items": {
+          "ItemId": "ITM156",
+          "ItemName": "Candy",
+          "ItemCost": "1.15"
+        },
+        "itemCount": 3
+      },
+      {
+        "orderItemId": "MB-ITM157",
+        "items": {
+          "ItemId": "ITM157",
+          "ItemName": "Sharpie",
+          "ItemCost": "1.25"
+        },
+        "itemCount": 4
+      }
+    ]
+  }
+}

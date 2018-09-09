@@ -1,0 +1,26 @@
+#%RAML 1.0
+title: proc-orders-mb-api
+baseUri: 
+version: 
+documentation:
+  - title: System API for Modusbox's orders domain.
+    content: > 
+uses: 
+  traits: traits/traitsLibrary.raml
+
+/orders:
+  /{orderId}:
+    uriParameters: 
+      orderId: 
+        description: Order Id
+        type: number
+        example: 15346
+    get:
+        description: Returns Placement Date and Customer Name for the order id.
+        is: [traits.client-id-required, traits.standard-error-responses]
+        responses:
+            200:
+              body:
+                application/json:
+                  example: !include examples/orderIDResponse.json
+                 

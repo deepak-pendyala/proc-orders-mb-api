@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd">
+     <apikit:config xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" name="proc-orders-mb-api-config" raml="proc-orders-mb-api.raml" consoleEnabled="true" doc:name="Router" keepRamlBaseUri="false">
+        <apikit:flow-mapping resource="/orders/{orderId}" action="get" flow-ref="get:/orders/{orderId}:proc-orders-mb-api-config"/>
+    </apikit:config>
+    <secure-property-placeholder:config name="Secure_Property_Placeholder" key="${mule.key}" location="${mule.env}.properties" doc:name="Secure Property Placeholder"/>
+    <json-logger:json-logger-config name="JSON_Logger__Logger_Configuration" rootCorrelationId="#[(message.inboundProperties.correlationId)]" applicationName="${api.name}" applicationVersion="${api.version}" doc:name="JSON Logger: Logger Configuration"/>
+    <api-platform-gw:api apiName="${apiManager.name}" version="${apiManager.version}" flowRef="proc-orders-mb-api-main" create="true" doc:name="API Autodiscovery"/>
+</mule>
